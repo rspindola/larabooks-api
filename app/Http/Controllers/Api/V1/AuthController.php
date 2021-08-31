@@ -93,42 +93,6 @@ class AuthController extends Controller
         $token = $request->user()->token();
         $token->revoke();
 
-        $response = 'Token revogado com sucesso!';
-        return response($response, 200);
-    }
-
-    /**
-     * Envia o link de redefinição de senha para o email do usuário
-     *
-     * @param SendResetPasswordLinkRequest $request
-     * @return \Illuminate\Http\Response
-     */
-    public function sendResetPasswordLink(Request $request)
-    {
-        $email = $request->email;
-
-        // Verificando se o usuário já possui um token gerado em menos de 5 minutos.
-        $hasRecentToken = DB::table('password_resets')->where('email', $email)
-            ->where('created_at', '>=', now()->subMinutes(5)->toDateTimeString())->exists();
-
-        if ($hasRecentToken) {
-            abort(400, 'Você solicitou a redefinição de senha recentemente, verifique seu email ou aguarde pelo menos 5 minutos para solicitar novamente.');
-        }
-
-        // Se o usuário não acessou antes....
-        if (!User::whereEmail($email)->exists()) {
-            // TODO Sincronizar os dados do usuário ASPIN na base local
-            // Se o usuário não existir na ASPIN, lançar um erro.
-        }
-
-        $response = Password::broker()->sendResetLink(
-            $request->only('email')
-        );
-
-        if ($response == Password::RESET_LINK_SENT) {
-            return trans($response);
-        } else {
-            abort(500, "Erro ao enviar link de redefinição de senha!");
-        }
+        return response()->json(['success' => ['main' => 'Logout successfully']], 200);
     }
 }

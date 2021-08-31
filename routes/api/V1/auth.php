@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Route;
  * @apiSuccess {String} auth.token_type Tipo do token
  * @apiSuccess {Number} auth.expires_in Tempo de validade do token
  */
-Route::post('login', [AuthController::class, 'login']);
+Route::post('login', [AuthController::class, 'login'])->name('login');
 
 /**
  * @api {post} /register Registrar Usuário
@@ -56,20 +56,7 @@ Route::post('login', [AuthController::class, 'login']);
  * @apiSuccess {String} auth.token_type Tipo do token
  * @apiSuccess {Number} auth.expires_in Tempo de validade do token
  */
-Route::post('register', [AuthController::class, 'register']);
-
-/**
- * @api {post} /forgot-password Esqueci Senha
- * @apiDescription Envia o link de redefinição de senha para o email do usuário
- * @apiName EsqueciSenha
- * @apiGroup Auth
- * @apiVersion 0.0.1
- *
- * @apiParam {String} email Email do usuário
- *
- * @apiSuccess {String} status Status da operação
- */
-Route::post('/forgot-password', [AuthController::class, 'sendResetPasswordLink']);
+Route::post('register', [AuthController::class, 'register'])->name('register');
 
 Route::middleware('auth:api')->group(function () {
 
@@ -84,5 +71,5 @@ Route::middleware('auth:api')->group(function () {
      *
      * @apiSuccess {String} response Mensagem de sucesso
      */
-    Route::get('/logout', [AuthController::class, 'logout']);
+    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 });

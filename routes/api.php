@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
 /*
 |--------------------------------------------------------------------------
 | Rotas de autenticação
@@ -24,5 +25,9 @@ use Illuminate\Support\Facades\Route;
 | GET  /logout
 |
 */
+Route::prefix('auth')->name('auth.')->group(base_path('routes/api/V1/auth.php'));
 
-Route::name('auth')->group(base_path('routes/api/V1/auth.php'));
+Route::prefix('categories')->name('categories.')->group(base_path('routes/api/V1/categories.php'));
+Route::prefix('books')->name('books.')->group(base_path('routes/api/V1/books.php'));
+Route::prefix('companies')->name('companies.')->group(base_path('routes/api/V1/companies.php'));
+
