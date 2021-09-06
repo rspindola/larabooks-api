@@ -131,19 +131,15 @@ class CategoryControllerTest extends TestCase
      */
     public function testShouldCanUpdateACategory()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
 
         $category = Category::factory()->create();
 
-        $icon = UploadedFile::fake()->image('icon.jpg');
-
         $payload = [
             'name' => 'Category Test Updated',
-            'description' => 'Category description Updated',
-            'icon' => $icon
+            'description' => 'Category description Updated'
         ];
 
         $request = $this->putJson(route('categories.update', ['category' => $category->id]), $payload);

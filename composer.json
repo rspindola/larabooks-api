@@ -56,7 +56,13 @@
             "chmod -R 777 public/"
         ],
         "tests": "vendor/bin/phpunit",
-        "tests:cov": "vendor/bin/phpunit --coverage-html public/reports/"
+        "tests:cov": "vendor/bin/phpunit --coverage-html public/reports/",
+        "docker": "composer docker:up && composer docker:install && composer docker:migrate && docker:passport",
+        "docker:down": "docker-compose down && docker image rm $(docker image ls -q) && docker volume rm $(docker volume ls -q)",
+        "docker:up": "cp -n .env.example.docker .env && docker-compose up -d",
+        "docker:install": "docker-compose exec app composer install && php artisan key:generate && php artisan storage:link",
+        "docker:migrate": "docker-compose exec app php artisan migrate --seed",
+        "docker:passport": "docker-compose exec app php artisan passport install"
     },
     "extra": {
         "laravel": {

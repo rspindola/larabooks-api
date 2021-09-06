@@ -39,8 +39,6 @@ class CategoryRequest extends FormRequest
     public function rules()
     {
         return [
-            // 'title' => 'required',
-            // 'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000, // max 10MB
         ];
     }
 
