@@ -1,0 +1,27 @@
+os:
+  - linux
+
+language: php # language
+
+php:
+  - 7.4
+  - 8.0
+
+services:
+  - mysql # will init MySQL
+
+before_script:
+  - cp .env.testing .env # copying .env.testing
+  - mysql -e 'create database testing;' # will run this command
+  - composer self-update
+  - composer install --no-interaction
+  - php artisan key:generate
+  - php artisan migrate --seed
+  - php artisan passport:install
+
+script:
+  - vendor/bin/phpunit # run PHPUnit
+
+notifications:
+  email:
+    - renatospindolasistemas@gmail.com
