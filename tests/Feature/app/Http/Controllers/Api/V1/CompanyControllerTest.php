@@ -2,7 +2,9 @@
 
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Foundation\Testing\{DatabaseMigrations, RefreshDatabase};
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
@@ -22,7 +24,7 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldGetCompanys()
+    public function test_should_get_companies()
     {
         $request = $this->getJson(route('companies.index'));
         $request->assertStatus(200);
@@ -33,24 +35,53 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanAddCompany()
+    public function test_should_can_add_company_with_logo()
     {
 
         Passport::actingAs(
             User::factory()->create()
         );
 
-        $company = Company::factory()->create();
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('company.jpg');
+
         $payload = [
-            'name' => $company->name,
-            'description' => $company->description,
-            'about' => $company->about,
-            'logo' => $company->logo,
-            'website' => $company->website,
+            'name' => 'Test name',
+            'description' => 'Test description',
+            'about' => 'Test about',
+            'logo' => $file,
+            'website' => 'http://test.com',
         ];
 
         $request = $this->postJson(route('companies.store'), $payload);
         $request->assertStatus(201);
+        $request->assertJsonStructure(['name', 'description', 'about', 'logo', 'website', 'slug', 'dateForHumans', 'created_at']);
+        Storage::disk('public')->assertExists('images/companies/' . $file->hashName());
+        Storage::disk('public')->assertMissing('missing.jpg');
+    }
+
+    /**
+     * Teste enviando dados corretos.
+     *
+     * @return void
+     */
+    public function test_should_can_add_company_without_logo()
+    {
+
+        Passport::actingAs(
+            User::factory()->create()
+        );
+
+        $payload = [
+            'name' => 'Test name',
+            'description' => 'Test description',
+            'about' => 'Test about',
+            'website' => 'http://test.com',
+        ];
+
+        $request = $this->postJson(route('companies.store'), $payload);
+        $request->assertStatus(201);
+        $request->assertJsonStructure(['name', 'description', 'about', 'logo', 'website', 'slug', 'dateForHumans', 'created_at']);
     }
 
 
@@ -59,7 +90,7 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantFindACompany()
+    public function test_should_cant_find_company()
     {
 
         Passport::actingAs(
@@ -78,9 +109,8 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanFindACompany()
+    public function test_should_can_find_company()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
@@ -89,6 +119,7 @@ class CompanyControllerTest extends TestCase
 
         $request = $this->getJson(route('companies.show', ['company' => $company]));
         $request->assertStatus(200);
+        $request->assertJsonStructure(['name', 'description', 'about', 'logo', 'website', 'slug', 'dateForHumans', 'created_at']);
     }
 
     /**
@@ -96,9 +127,8 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantUpdateCompanyWhyNotFind()
+    public function test_should_cant_update_company_mot_find()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
@@ -119,7 +149,35 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanUpdateACompany()
+    public function test_should_can_update_company_with_logo()
+    {
+        Passport::actingAs(
+            User::factory()->create()
+        );
+
+        $company = Company::factory()->create();
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('company.jpg');
+
+
+        $payload = [
+            'description' => 'Company description Updated',
+            'logo' => $file
+        ];
+
+        $request = $this->putJson(route('companies.update', ['company' => $company->id]), $payload);
+        $request->assertStatus(200);
+        $request->assertJsonStructure(['name', 'description', 'about', 'logo', 'website', 'slug', 'dateForHumans', 'created_at']);
+        Storage::disk('public')->assertExists('images/companies/' . $file->hashName());
+        Storage::disk('public')->assertMissing('missing.jpg');
+    }
+
+    /**
+     * Teste enviando dados corretos.
+     *
+     * @return void
+     */
+    public function test_should_can_update_company_without_logo()
     {
         Passport::actingAs(
             User::factory()->create()
@@ -128,12 +186,12 @@ class CompanyControllerTest extends TestCase
         $company = Company::factory()->create();
 
         $payload = [
-            'name' => 'Company Test Updated',
             'description' => 'Company description Updated'
         ];
 
         $request = $this->putJson(route('companies.update', ['company' => $company->id]), $payload);
         $request->assertStatus(200);
+        $request->assertJsonStructure(['name', 'description', 'about', 'logo', 'website', 'slug', 'dateForHumans', 'created_at']);
     }
 
     /**
@@ -141,7 +199,7 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantDeleteCompany()
+    public function test_should_cant_delete_company()
     {
         Passport::actingAs(
             User::factory()->create()
@@ -159,7 +217,7 @@ class CompanyControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanDeleteCompany()
+    public function test_should_can_delete_company()
     {
 
         Passport::actingAs(

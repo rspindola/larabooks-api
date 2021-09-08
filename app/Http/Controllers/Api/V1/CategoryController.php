@@ -3,21 +3,17 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CategoryRequest;
-use App\Models\Category;
-use App\Http\Resources\CategoryResource;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\Category\{CategoryUpdateRequest, CategoryStoreRequest};
+use App\Repositories\Api\V1\CategoryRepository;
+use Exception;
 
 class CategoryController extends Controller
 {
 
-    function __construct()
+    public function __construct(CategoryRepository $repository)
     {
-        // $this->middleware('permission:view_blogs', ['only' => ['index', 'show']]);
-        // $this->middleware('permission:add_blogs',  ['only' => ['store']]);
-        // $this->middleware('permission:edit_blogs', ['only' => ['update']]);
-        // $this->middleware('permission:delete_blogs', ['only' => ['destroy']]);
+        $this->repository = $repository;
+        $this->middleware('auth')->except('index');
     }
 
     /**
@@ -27,7 +23,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        return CategoryResource::collection(Category::all());
+        $result = $this->repository->getAll();
+        return response()->json($result);
     }
 
     /**
@@ -36,19 +33,24 @@ class CategoryController extends Controller
      * @param  App\Http\Requests\Api\Category\CategoryRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CategoryRequest $request)
+    public function store(CategoryStoreRequest $request)
     {
         $data = $request->all();
 
-        if ($request->hasFile('icon')) {
-            $ext = $request->file('icon')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('icon')->storeAs('images/categories', $filename, 'public');
-            $data['icon'] = "images/categories/" . $filename;
-        }
+        try {
+            if ($request->hasFile('icon') && $request->file('icon')->isValid()) {
+                $file = $request->icon;
+            }else{
+                $file = null;
+            }
 
-        $category = Category::create($data);
-        return new CategoryResource($category);
+            $result = $this->repository->create($data, $file);
+
+            // retornando sucesso
+            return response()->json($result, 201);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
+        }
     }
 
     /**
@@ -59,12 +61,14 @@ class CategoryController extends Controller
      */
     public function show($category)
     {
-        $categoryFound = Category::find($category);
-        if (!$categoryFound) {
-            return response()->json(['errors' => ['main' => 'Categoria não encontrada']], 404);
-        }
+        try {
+            $result = $this->repository->find($category);
 
-        return new CategoryResource($categoryFound);
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
+        }
     }
 
 
@@ -75,30 +79,26 @@ class CategoryController extends Controller
      * @param  \App\Models\Category  $category
      * @return \Illuminate\Http\Response
      */
-    public function update(CategoryRequest $request, $category)
+    public function update(CategoryUpdateRequest $request, $category)
     {
-        $categoryFound = Category::find($category);
-        if (!$categoryFound) {
-            return response()->json(['errors' => ['main' => 'Categoria não encontrada']], 404);
-        }
-
         $data = $request->all();
 
-        if ($request->hasFile('icon')) {
-            if (Storage::disk('public')->exists($categoryFound->icon)) {
-                Storage::disk('public')->delete($categoryFound->icon);
+        try {
+            $categoryFound = $this->repository->find($category);
+
+            if ($request->hasFile('icon') && $request->file('icon')->isValid()) {
+                $file = $request->icon;
+            }else{
+                $file = null;
             }
 
-            $ext = $request->file('icon')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('icon')->storeAs('images/categories', $filename, 'public');
-            $data['icon'] = "images/categories/" . $filename;
+            $result = $this->repository->update($data, $categoryFound, $file);
+
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $categoryFound->update($data);
-        $categoryFound->refresh();
-
-        return new CategoryResource($categoryFound);
     }
 
     /**
@@ -109,16 +109,13 @@ class CategoryController extends Controller
      */
     public function destroy ($category)
     {
-        $categoryFound = Category::find($category);
-        if (!$categoryFound) {
-            return response()->json(['errors' => ['main' => 'Categoria não encontrada']], 404);
-        }
+        try {
+            $categoryFound = $this->repository->find($category);
+            $result = $this->repository->delete($categoryFound);
 
-        if (Storage::disk('public')->exists($categoryFound->icon)) {
-            Storage::disk('public')->delete($categoryFound->icon);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $categoryFound->delete();
-        return response()->json(['success' => ['main' => 'Category deleted']], 200);
     }
 }

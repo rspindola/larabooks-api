@@ -29,7 +29,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldBeDeniedIfNotSendCredentials()
+    public function user_should_be_denied_if_not_send_credentials()
     {
         $request = $this->postJson(route('auth.login'));
         $request->assertStatus(422);
@@ -40,7 +40,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldBeDeniedIfNotRegistered()
+    public function test_user_should_be_denied_if_not_registered()
     {
         $payload = [
             'email' => 'invalid@email.com',
@@ -57,7 +57,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldSendWrongPassword()
+    public function test_user_should_send_wrong_password()
     {
         $user = User::factory()->create();
         $payload = [
@@ -75,7 +75,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserCanAuthenticate()
+    public function test_user_can_authenticate()
     {
         $user = User::factory()->create();
         $payload = [
@@ -99,7 +99,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldNotSendName()
+    public function test_user_should_not_send_name()
     {
         $payload = [
             'name' => null,
@@ -117,7 +117,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldNotSendEmail()
+    public function test_user_should_not_send_email()
     {
         $payload = [
             'name' => 'Renato',
@@ -135,7 +135,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserShouldNotSendPassword()
+    public function test_user_should_not_send_password()
     {
         $payload = [
             'name' => 'Renato',
@@ -149,11 +149,11 @@ class AuthControllerTest extends TestCase
     }
 
     /**
-     * Teste enviando usuario já registrado
+     * Teste enviando usuário já registrado
      *
      * @return void
      */
-    public function testUserShouldBeDeniedIfAlreadRegistered()
+    public function test_user_should_be_denied_if_already_registered()
     {
         $user = User::factory()->create();
         $payload = [
@@ -172,7 +172,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUserCanRegistered()
+    public function test_user_can_registered()
     {
         $payload = [
             'name' => 'Renato',
@@ -190,7 +190,7 @@ class AuthControllerTest extends TestCase
      *
      * @return void
      */
-    public function testUseLogout()
+    public function test_user_logout()
     {
         Passport::actingAs(
             User::factory()->create()

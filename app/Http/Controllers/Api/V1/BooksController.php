@@ -3,20 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BooksRequest;
-use App\Models\Book;
-use App\Http\Resources\BooksResource;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Http\Requests\Book\{BookStoreRequest, BookUpdateRequest};
+use App\Repositories\Api\V1\BookRepository;
+use Exception;
 
 class BooksController extends Controller
 {
-    public function __construct()
+    public function __construct(BookRepository $repository)
     {
-        // $this->middleware('permission:view_blogs', ['only' => ['index', 'show']]);
-        // $this->middleware('permission:add_blogs',  ['only' => ['store']]);
-        // $this->middleware('permission:edit_blogs', ['only' => ['update']]);
-        // $this->middleware('permission:delete_blogs', ['only' => ['destroy']]);
+        $this->repository = $repository;
+        $this->middleware('auth')->except('index');
     }
 
     /**
@@ -26,7 +22,8 @@ class BooksController extends Controller
      */
     public function index()
     {
-        return BooksResource::collection(Book::all());
+        $result = $this->repository->getAll();
+        return response()->json($result);
     }
 
     /**
@@ -35,36 +32,24 @@ class BooksController extends Controller
      * @param  App\Http\Requests\Api\Book\BookRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(BooksRequest $request)
+    public function store(BookStoreRequest $request)
     {
         $data = $request->all();
 
-        if ($request->hasFile('cover') && $request->file('cover')->isValid()) {
-            // Define um aleatório para o arquivo baseado no timestamps atual
-            $name = uniqid(date('HisYmd'));
+        try {
+            if ($request->hasFile('cover') && $request->file('cover')->isValid()) {
+                $file = $request->cover;
+            }else{
+                $file = null;
+            }
 
-            // Recupera a extensão do arquivo
-            $extension = $request->cover->extension();
+            $result = $this->repository->create($data, $file);
 
-            // Define finalmente o nome
-            $nameFile = "{$name}.{$extension}";
-
-            // Faz o upload:
-            // Se funcionar o arquivo foi armazenado em storage/app/public/images/book/nomedinamicoarquivo.extensao
-            $upload = $request->image->storeAs('images/book', $nameFile, 'public');
-
-            if ( !$upload )
-            return redirect()
-                        ->back()
-                        ->with('error', 'Falha ao fazer upload')
-                        ->withInput();
-
-            // inclui o nome novo no banco
-            $data['cover'] = "images/book/" . $nameFile;
+            // retornando sucesso
+            return response()->json($result, 201);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $book = Book::create($data);
-        return new BooksResource($book);
     }
 
     /**
@@ -75,12 +60,14 @@ class BooksController extends Controller
      */
     public function show($book)
     {
-        $bookFound = Book::find($book);
-        if (!$bookFound) {
-            return response()->json(['errors' => ['main' => 'Book not found']], 404);
-        }
+        try {
+            $result = $this->repository->find($book);
 
-        return new BooksResource($bookFound);
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
+        }
     }
 
 
@@ -91,30 +78,26 @@ class BooksController extends Controller
      * @param  \App\Models\Book  $book
      * @return \Illuminate\Http\Response
      */
-    public function update(BooksRequest $request, $book)
+    public function update(BookUpdateRequest $request, $book)
     {
-        $bookFound = Book::find($book);
-        if (!$bookFound) {
-            return response()->json(['errors' => ['main' => 'Book not found']], 404);
-        }
-
         $data = $request->all();
 
-        if ($request->hasFile('cover')) {
-            if (Storage::disk('public')->exists($bookFound->cover)) {
-                Storage::disk('public')->delete($bookFound->cover);
+        try {
+            $bookFound = $this->repository->find($book);
+
+            if ($request->hasFile('cover') && $request->file('cover')->isValid()) {
+                $file = $request->cover;
+            } else {
+                $file = null;
             }
 
-            $ext = $request->file('cover')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('cover')->storeAs('images/book', $filename, 'public');
-            $data['cover'] = "images/book/" . $filename;
+            $result = $this->repository->update($data, $bookFound, $file);
+
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $bookFound->update($data);
-        $bookFound->refresh();
-
-        return new BooksResource($bookFound);
     }
 
     /**
@@ -125,16 +108,13 @@ class BooksController extends Controller
      */
     public function destroy($book)
     {
-        $bookFound = Book::find($book);
-        if (!$bookFound) {
-            return response()->json(['errors' => ['main' => 'Book not found']], 404);
-        }
+        try {
+            $bookFound = $this->repository->find($book);
+            $result = $this->repository->delete($bookFound);
 
-        if (Storage::disk('public')->exists($bookFound->cover)) {
-            Storage::disk('public')->delete($bookFound->cover);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $bookFound->delete();
-        return response()->json(['success' => ['main' => 'Book deleted']], 200);
     }
 }

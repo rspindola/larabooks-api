@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Company;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-class BooksRequest extends FormRequest
+class CompanyUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -39,8 +39,11 @@ class BooksRequest extends FormRequest
     public function rules()
     {
         return [
-            // 'title' => 'required',
-            // 'image' => 'required|mimes:jpeg,jpg,png,gif|max:10000, // max 10MB
+            'name' => 'sometimes|required',
+            'description' => 'sometimes|required',
+            'about' => 'sometimes|required',
+            'logo' => 'sometimes|required|mimes:jpeg,jpg,png,gif|max:10000',
+            'website' => 'sometimes|required|url',
         ];
     }
 

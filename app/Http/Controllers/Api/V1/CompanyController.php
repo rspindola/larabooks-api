@@ -3,21 +3,16 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CompanyRequest;
-use App\Models\Company;
-use App\Http\Resources\CompanyResource;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-
+use App\Http\Requests\Company\{CompanyStoreRequest, CompanyUpdateRequest};
+use App\Repositories\Api\V1\CompanyRepository;
+use Exception;
 class CompanyController extends Controller
 {
 
-    function __construct()
+    public function __construct(CompanyRepository $repository)
     {
-        // $this->middleware('permission:view_blogs', ['only' => ['index', 'show']]);
-        // $this->middleware('permission:add_blogs',  ['only' => ['store']]);
-        // $this->middleware('permission:edit_blogs', ['only' => ['update']]);
-        // $this->middleware('permission:delete_blogs', ['only' => ['destroy']]);
+        $this->repository = $repository;
+        $this->middleware('auth')->except('index');
     }
 
     /**
@@ -27,28 +22,34 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        return CompanyResource::collection(Company::all());
+        $result = $this->repository->getAll();
+        return response()->json($result);
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  App\Http\Requests\Api\Company\CompanyRequest  $request
+     * @param  App\Http\Requests\Api\Company\CompanyStoreRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CompanyRequest $request)
+    public function store(CompanyStoreRequest $request)
     {
         $data = $request->all();
 
-        if ($request->hasFile('logo')) {
-            $ext = $request->file('logo')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('logo')->storeAs('images/companies', $filename, 'public');
-            $data['logo'] = "images/companies/" . $filename;
-        }
+        try {
+            if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+                $file = $request->logo;
+            }else{
+                $file = null;
+            }
 
-        $company = Company::create($data);
-        return new CompanyResource($company);
+            $result = $this->repository->create($data, $file);
+
+            // retornando sucesso
+            return response()->json($result, 201);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
+        }
     }
 
     /**
@@ -59,46 +60,44 @@ class CompanyController extends Controller
      */
     public function show($company)
     {
-        $companyFound = Company::find($company);
-        if (!$companyFound) {
-            return response()->json(['errors' => ['main' => 'Company not found']], 404);
-        }
+        try {
+            $result = $this->repository->find($company);
 
-        return new CompanyResource($companyFound);
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
+        }
     }
 
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  App\Http\Requests\Api\Company\CompanyRequest  $request
+     * @param  App\Http\Requests\Api\Company\CompanyUpdateRequest  $request
      * @param  \App\Models\Company  $company
      * @return \Illuminate\Http\Response
      */
-    public function update(CompanyRequest $request, $company)
+    public function update(CompanyUpdateRequest $request, $company)
     {
-        $companyFound = Company::find($company);
-        if (!$companyFound) {
-            return response()->json(['errors' => ['main' => 'Company not found']], 404);
-        }
-
         $data = $request->all();
 
-        if ($request->hasFile('logo')) {
-            if (Storage::disk('public')->exists($companyFound->logo)) {
-                Storage::disk('public')->delete($companyFound->logo);
+        try {
+            $companyFound = $this->repository->find($company);
+
+            if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+                $file = $request->logo;
+            } else {
+                $file = null;
             }
 
-            $ext = $request->file('logo')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('logo')->storeAs('images/companies', $filename, 'public');
-            $data['logo'] = "images/companies/" . $filename;
+            $result = $this->repository->update($data, $companyFound, $file);
+
+            // retornando sucesso
+            return response()->json($result);
+        } catch (Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $companyFound->update($data);
-        $companyFound->refresh();
-
-        return new CompanyResource($companyFound);
     }
 
     /**
@@ -109,16 +108,13 @@ class CompanyController extends Controller
      */
     public function destroy($company)
     {
-        $companyFound = Company::find($company);
-        if (!$companyFound) {
-            return response()->json(['errors' => ['main' => 'Company not found']], 404);
-        }
+        try {
+            $companyFound = $this->repository->find($company);
+            $result = $this->repository->delete($companyFound);
 
-        if (Storage::disk('public')->exists($companyFound->logo)) {
-            Storage::disk('public')->delete($companyFound->logo);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['errors' => ['main' => $e->getMessage()]], $e->getCode());
         }
-
-        $companyFound->delete();
-        return response()->json(['success' => ['main' => 'Company deleted']], 200);
     }
 }
