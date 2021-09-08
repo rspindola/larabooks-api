@@ -24,10 +24,26 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldGetCategories()
+    public function test_should_get_categories()
     {
         $request = $this->getJson(route('categories.index'));
         $request->assertStatus(200);
+    }
+
+    /**
+     * Teste enviando dados incorretos.
+     *
+     * @return void
+     */
+    public function test_should_cant_add_category_not_send_credentials()
+    {
+        $payload = [
+            'name' => 'Category Test',
+            'description' => 'Category description'
+        ];
+
+        $request = $this->postJson(route('categories.store'), $payload);
+        $request->assertStatus(401);
     }
 
     /**
@@ -35,18 +51,14 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanAddCategory()
+    public function test_should_can_add_category_with_file()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
 
         Storage::fake('public');
-
-        $fileSize = 1024; // 1mb
-        $fileName = 'icon.png';
-        $file = UploadedFile::fake()->create($fileName, $fileSize);
+        $file = UploadedFile::fake()->image('category.jpg');
 
         $payload = [
             'name' => 'Category Test',
@@ -56,10 +68,30 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->postJson(route('categories.store'), $payload);
         $request->assertStatus(201);
-        $request->assertJsonStructure(['data' => ["id", "name", "slug", "description", "created_at", "updated_at"]]);
+        $request->assertJsonStructure(['name', 'description', 'icon', 'slug', 'dateForHumans', 'created_at']);
+        Storage::disk('public')->assertExists('images/categories/' . $file->hashName());
+        Storage::disk('public')->assertMissing('missing.jpg');
+    }
 
-        // Assert the file was stored...
-        // Storage::disk('public')->assertExists('images/category/' . $file->hashName());
+    /**
+     * Teste enviando dados corretos.
+     *
+     * @return void
+     */
+    public function test_should_can_add_category_without_file()
+    {
+        Passport::actingAs(
+            User::factory()->create()
+        );
+
+        $payload = [
+            'name' => 'Category Test',
+            'description' => 'Category description'
+        ];
+
+        $request = $this->postJson(route('categories.store'), $payload);
+        $request->assertStatus(201);
+        $request->assertJsonStructure(['name', 'description', 'icon', 'slug', 'dateForHumans', 'created_at']);
     }
 
 
@@ -68,9 +100,8 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantFindACategory()
+    public function test_should_cant_find_category()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
@@ -79,7 +110,7 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->getJson(route('categories.show', ['category' => $payloadID]));
         $request->assertStatus(404);
-        $request->assertJson(['errors' => ['main' => 'Categoria não encontrada']]);
+        $request->assertJson(['errors' => ['main' => 'Category not found']]);
     }
 
     /**
@@ -87,9 +118,8 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanFindACategory()
+    public function test_should_can_find_category()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
@@ -98,7 +128,7 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->getJson(route('categories.show', ['category' => $category]));
         $request->assertStatus(200);
-        $request->assertJsonStructure(['data' => ["id", "name", "slug", "description", "created_at", "updated_at"]]);
+        $request->assertJsonStructure(['name', 'description', 'icon', 'slug', 'dateForHumans', 'created_at']);
     }
 
     /**
@@ -106,9 +136,8 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantUpdateCategoryWhyNotFind()
+    public function test_should_cant_update_category_why_not_find()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );
@@ -121,7 +150,7 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->putJson(route('categories.update', ['category' => $payloadID]), $payload);
         $request->assertStatus(404);
-        $request->assertJson(['errors' => ['main' => 'Categoria não encontrada']]);
+        $request->assertJson(['errors' => ['main' => 'Category not found']]);
     }
 
     /**
@@ -129,7 +158,35 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanUpdateACategory()
+    public function test_should_can_update_category_with_file()
+    {
+        Passport::actingAs(
+            User::factory()->create()
+        );
+
+        $category = Category::factory()->create();
+
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('category.jpg');
+
+        $payload = [
+            'description' => 'Category description Updated',
+            'icon' => $file
+        ];
+
+        $request = $this->putJson(route('categories.update', ['category' => $category->id]), $payload);
+        $request->assertStatus(200);
+        $request->assertJsonStructure(['name', 'description', 'icon', 'slug', 'dateForHumans', 'created_at']);
+        Storage::disk('public')->assertExists('images/categories/' . $file->hashName());
+        Storage::disk('public')->assertMissing('missing.jpg');
+    }
+
+    /**
+     * Teste enviando dados corretos.
+     *
+     * @return void
+     */
+    public function test_should_can_update_category_without_file()
     {
         Passport::actingAs(
             User::factory()->create()
@@ -144,7 +201,7 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->putJson(route('categories.update', ['category' => $category->id]), $payload);
         $request->assertStatus(200);
-        $request->assertJsonStructure(['data' => ["name", "slug", "description", "created_at", "updated_at", "id"]]);
+        $request->assertJsonStructure(['name', 'description', 'icon', 'slug', 'dateForHumans', 'created_at']);
     }
 
     /**
@@ -152,7 +209,7 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCantDeleteCategory()
+    public function test_should_cant_delete_category()
     {
         Passport::actingAs(
             User::factory()->create()
@@ -162,7 +219,7 @@ class CategoryControllerTest extends TestCase
 
         $request = $this->delete(route('categories.destroy', ['category' => $payloadID]));
         $request->assertStatus(404);
-        $request->assertJson(['errors' => ['main' => 'Categoria não encontrada']]);
+        $request->assertJson(['errors' => ['main' => 'Category not found']]);
     }
 
     /**
@@ -170,9 +227,8 @@ class CategoryControllerTest extends TestCase
      *
      * @return void
      */
-    public function testShouldCanDeleteCategory()
+    public function test_should_can_delete_category()
     {
-
         Passport::actingAs(
             User::factory()->create()
         );

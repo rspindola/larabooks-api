@@ -24,6 +24,7 @@ class CategoryFactory extends Factory
         return [
             'name' => $this->faker->word,
             'description' => $this->faker->sentence($nbWords = 6, $variableNbWords = true),
+            'icon' => $this->faker->image(public_path('images/categories'), 10, 10),
             'slug' => $this->faker->slug
         ];
     }
