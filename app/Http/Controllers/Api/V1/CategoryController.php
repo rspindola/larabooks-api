@@ -43,8 +43,8 @@ class CategoryController extends Controller
         if ($request->hasFile('icon')) {
             $ext = $request->file('icon')->getClientOriginalExtension();
             $filename = Str::random(10) . "." . $ext;
-            $request->file('icon')->storeAs('images/category', $filename, 'public');
-            $data['icon'] = "images/category/" . $filename;
+            $request->file('icon')->storeAs('images/categories', $filename, 'public');
+            $data['icon'] = "images/categories/" . $filename;
         }
 
         $category = Category::create($data);
@@ -91,8 +91,8 @@ class CategoryController extends Controller
 
             $ext = $request->file('icon')->getClientOriginalExtension();
             $filename = Str::random(10) . "." . $ext;
-            $request->file('icon')->storeAs('images/category', $filename, 'public');
-            $data['icon'] = "images/category/" . $filename;
+            $request->file('icon')->storeAs('images/categories', $filename, 'public');
+            $data['icon'] = "images/categories/" . $filename;
         }
 
         $categoryFound->update($data);

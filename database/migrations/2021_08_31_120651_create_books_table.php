@@ -21,13 +21,13 @@ class CreateBooksTable extends Migration
             $table->string('title');
             $table->string('cover')->default('cover.png');
             $table->string('description')->nullable();
-            $table->string('about')->nullable();
+            $table->text('about')->nullable();
             $table->json('chapters')->nullable();
             $table->string('gender');
             $table->integer('pages');
             $table->decimal('price', 8, 2);
             $table->boolean('status')->default(1);
-            $table->string('published_at');
+            $table->date('published_at');
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies')->onUpdate('cascade')->onDelete('cascade');

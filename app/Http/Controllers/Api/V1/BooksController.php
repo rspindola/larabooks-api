@@ -39,11 +39,28 @@ class BooksController extends Controller
     {
         $data = $request->all();
 
-        if ($request->hasFile('cover')) {
-            $ext = $request->file('cover')->getClientOriginalExtension();
-            $filename = Str::random(10) . "." . $ext;
-            $request->file('cover')->storeAs('images/book', $filename, 'public');
-            $data['cover'] = "images/book/" . $filename;
+        if ($request->hasFile('cover') && $request->file('cover')->isValid()) {
+            // Define um aleatório para o arquivo baseado no timestamps atual
+            $name = uniqid(date('HisYmd'));
+
+            // Recupera a extensão do arquivo
+            $extension = $request->cover->extension();
+
+            // Define finalmente o nome
+            $nameFile = "{$name}.{$extension}";
+
+            // Faz o upload:
+            // Se funcionar o arquivo foi armazenado em storage/app/public/images/book/nomedinamicoarquivo.extensao
+            $upload = $request->image->storeAs('images/book', $nameFile, 'public');
+
+            if ( !$upload )
+            return redirect()
+                        ->back()
+                        ->with('error', 'Falha ao fazer upload')
+                        ->withInput();
+
+            // inclui o nome novo no banco
+            $data['cover'] = "images/book/" . $nameFile;
         }
 
         $book = Book::create($data);
@@ -118,6 +135,6 @@ class BooksController extends Controller
         }
 
         $bookFound->delete();
-        return response()->json(['success' => ['main' => 'book deleted']], 200);
+        return response()->json(['success' => ['main' => 'Book deleted']], 200);
     }
 }
